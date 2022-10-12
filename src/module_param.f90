@@ -405,6 +405,10 @@ module param
   real(mytype) :: skinfric_start, skinfric_end, skinfric_tol, skinfric_res
   real(mytype), allocatable, dimension(:) :: skinfric, skinfricm1
 
+  ! Wall blowing parameters
+  integer :: iblow
+  real(mytype) :: blow_start, blow_end, blow_vel, blow_relax, blow_ramp
+
   !numbers
 
   real(mytype),parameter :: zpone=0.1_mytype

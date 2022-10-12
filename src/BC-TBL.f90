@@ -135,6 +135,9 @@ contains
           byz1(i, k) = zero
         enddo
       enddo
+      if (iblow == 1) then 
+         call wall_blowing()
+      end if
     endif
     !! Top Boundary
     if (nclyn == 2) then
@@ -298,6 +301,88 @@ contains
 
     return
   end subroutine blasius
+
+   !############################################################################
+   subroutine wall_blowing()
+
+      implicit none
+
+      real(mytype) :: amp_time, amp_space, x
+      integer :: i
+
+      amp_time = exp_blend(t, blow_ramp / two, blow_ramp)
+
+      if (xstart(2) == 1) then
+         do i = 1, nx
+            x = dx * (i - 1)
+            if (x >= blow_start - blow_relax / two .and. x <= blow_end + blow_relax / two) then
+               if (x < blow_start + blow_relax / two) then
+                  amp_space = exp_blend(x, blow_start, blow_relax)
+               else if (x > blow_end - blow_relax / two) then
+                  amp_space = one - exp_blend(x, blow_end, blow_relax)
+               else
+                  amp_space = one
+               end if
+               byy1(i,:) = amp_time * amp_space * blow_vel
+            end if
+         enddo
+      endif
+   end subroutine wall_blowing
+
+   !############################################################################
+   function quintic_blend(x, centre, width) result(y)
+
+      implicit none
+
+      real(mytype), intent(in) :: x, centre, width
+      real(mytype) :: xdash, y
+
+      xdash = (x - centre) / width
+      if (xdash < -half) then
+         y = zero
+      else if (xdash > half) then
+         y = one
+      else
+         y = 0.5_mytype + 1.875_mytype * xdash - 5.0_mytype * xdash**3 + 6.0_mytype * xdash**5
+      end if
+   end function
+
+   !############################################################################
+   function septic_blend(x, centre, width) result(y)
+
+      implicit none
+
+      real(mytype), intent(in) :: x, centre, width
+      real(mytype) :: xdash, y
+
+      xdash = (x - centre) / width
+      if (xdash < -half) then
+         y = zero
+      else if (xdash > half) then
+         y = one
+      else
+         y = 0.5_mytype + 2.1875_mytype * xdash - 8.75_mytype * xdash**3 + 21.0_mytype * xdash**5 - 20.0_mytype * xdash**7
+      end if
+   end function
+
+   !############################################################################
+   function exp_blend(x, centre, width) result(y)
+
+      implicit none
+
+      real(mytype), intent(in) :: x, centre, width
+      real(mytype) :: xdash, y
+      real(mytype), parameter :: TOL = 1.0e-6_mytype
+
+      xdash = (x - centre) / width
+      if (xdash <= -half + TOL) then
+         y = zero
+      else if (xdash >= half - TOL) then
+         y = one
+      else
+         y = one / (one + exp(one / (xdash - 0.5_mytype) + one / (xdash + 0.5_mytype)))
+      end if
+   end function
 
   !############################################################################
   subroutine postprocess_tbl(ux1,uy1,uz1,ep1)

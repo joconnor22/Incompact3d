@@ -61,6 +61,7 @@ subroutine parameter(input_i3d)
   NAMELIST /WallModel/ smagwalldamp
   NAMELIST /Tripping/ itrip,A_tr,xs_tr_tbl,ys_tr_tbl,ts_tr_tbl,x0_tr_tbl
   NAMELIST /SkinFrictionConvergence/ iskinfric,skinfric_start,skinfric_end,skinfric_tol
+  NAMELIST /WallBlowing/ iblow,blow_start,blow_end,blow_vel,blow_relax,blow_ramp
   NAMELIST /ibmstuff/ cex,cey,cez,ra,nobjmax,nraf,nvol,iforces, npif, izap, ianal, imove, thickness, chord, omega ,ubcx,ubcy,ubcz,rads, c_air
   NAMELIST /ForceCVs/ xld, xrd, yld, yud!, zld, zrd
   NAMELIST /LMN/ dens1, dens2, prandtl, ilmn_bound, ivarcoeff, ilmn_solve_temp, &
@@ -202,6 +203,11 @@ subroutine parameter(input_i3d)
      read(10, nml=SkinFrictionConvergence); rewind(10)
      if (iskinfric == 1 .and. (skinfric_start < zero .or. skinfric_end > xlx .or. skinfric_start > skinfric_end)) then
         if (nrank == 0) print *, "Problem with start/end locations for monitoring skin friction"
+        call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+     end if
+     read(10, nml=WallBlowing); rewind(10)
+     if (iblow == 1 .and. (blow_start < zero .or. blow_end > xlx .or. blow_start > blow_end)) then
+        if (nrank == 0) print *, "Problem with start/end locations for blowing region"
         call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
      end if
   endif
@@ -701,5 +707,13 @@ subroutine parameter_defaults()
   ! Skin friction convergence parameters (other defaults set elsewhere)
   iskinfric = 0
   skinfric_tol = zero
+
+  ! Wall blowing parameters
+  iblow = 0
+  blow_start = zero
+  blow_end = zero
+  blow_vel = zero
+  blow_relax = zero
+  blow_ramp = zero
 
 end subroutine parameter_defaults
