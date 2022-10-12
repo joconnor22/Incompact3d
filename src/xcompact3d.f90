@@ -83,6 +83,14 @@ program xcompact3d
 
      call postprocessing(rho1,ux1,uy1,uz1,pp3,phi1,ep1)
 
+     if (iskinfric == 1 .and. itime > initstat) then
+      call skin_friction_convergence()
+      if (mod(itime, icheckpoint) == 0 .and. skinfric_tol > zero .and. skinfric_res < skinfric_tol) then
+         if (nrank == 0) print *, "Skin friction has converged to within the tolerance value"
+         exit
+      end if
+     end if
+
   enddo !! End time loop
 
   call finalise_xcompact3d()
