@@ -400,6 +400,11 @@ module param
   real(mytype), allocatable, dimension(:) :: h_coeff1, h_1,phase1
   real(mytype), allocatable, dimension(:) :: h_coeff2, h_2,phase2
 
+  ! Skin friction convergence
+  integer :: iskinfric, skinfric_startidx, skinfric_endidx
+  real(mytype) :: skinfric_start, skinfric_end, skinfric_tol, skinfric_res
+  real(mytype), allocatable, dimension(:) :: skinfric, skinfricm1
+
   !numbers
 
   real(mytype),parameter :: zpone=0.1_mytype

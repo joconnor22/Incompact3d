@@ -31,7 +31,7 @@ module case
   private ! All functions/subroutines private by default
   public :: init, boundary_conditions, &
             momentum_forcing, scalar_forcing, set_fluid_properties, &
-            test_flow, preprocessing, postprocessing, visu_case, visu_case_init
+            test_flow, preprocessing, postprocessing, visu_case, visu_case_init, skin_friction_convergence
 
 contains
   !##################################################################
@@ -549,6 +549,38 @@ contains
     endif
 
   end subroutine test_flow
+  !##################################################################
+  !##################################################################
+  subroutine skin_friction_convergence()
+   
+   use MPI
+   use var, only : umean
+
+   implicit none
+
+   integer :: i, k, ierr
+
+   skinfric = zero
+   if (xstart(2) == 1) then
+      do k = xstS(3), xenS(3)
+         do i = 1, size(skinfric)
+            skinfric(i) = skinfric(i) + two * xnu * (umean(i+skinfric_startidx-1,2,k) - umean(i+skinfric_startidx-1,1,k)) / (yp(2) - yp(1)) / nz
+         end do
+      end do
+   end if
+
+   call MPI_ALLREDUCE(MPI_IN_PLACE, skinfric, size(skinfric), real_type, MPI_SUM, MPI_COMM_WORLD, ierr)
+
+   skinfric_res = zero
+   do i = 1, size(skinfric)
+      skinfric_res = skinfric_res + ((skinfric(i) - skinfricm1(i)) / skinfric(i))**2 / size(skinfric)
+   end do
+   skinfric_res = sqrt(skinfric_res) * xlx / dt
+   skinfricm1 = skinfric
+
+   if (mod(itime, ilist) == 0 .and. nrank == 0) print *, 'Skin friction residual:', skinfric_res
+
+  end subroutine skin_friction_convergence
   !##################################################################
   !##################################################################
 end module case

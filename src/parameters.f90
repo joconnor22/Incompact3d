@@ -35,7 +35,7 @@ subroutine parameter(input_i3d)
 
   character(len=80), intent(in) :: input_i3d
   real(mytype) :: theta, cfl,cf2
-  integer :: longueur ,impi,j, is, total
+  integer :: longueur ,impi,j, is, total, ierr
 
   NAMELIST /BasicParam/ p_row, p_col, nx, ny, nz, istret, beta, xlx, yly, zlz, &
        itype, iin, re, u1, u2, init_noise, inflow_noise, &
@@ -60,6 +60,7 @@ subroutine parameter(input_i3d)
   NAMELIST /LESModel/ jles, smagcst, smagwalldamp, nSmag, walecst, maxdsmagcst, iwall
   NAMELIST /WallModel/ smagwalldamp
   NAMELIST /Tripping/ itrip,A_tr,xs_tr_tbl,ys_tr_tbl,ts_tr_tbl,x0_tr_tbl
+  NAMELIST /SkinFrictionConvergence/ iskinfric,skinfric_start,skinfric_end,skinfric_tol
   NAMELIST /ibmstuff/ cex,cey,cez,ra,nobjmax,nraf,nvol,iforces, npif, izap, ianal, imove, thickness, chord, omega ,ubcx,ubcy,ubcz,rads, c_air
   NAMELIST /ForceCVs/ xld, xrd, yld, yud!, zld, zrd
   NAMELIST /LMN/ dens1, dens2, prandtl, ilmn_bound, ivarcoeff, ilmn_solve_temp, &
@@ -196,6 +197,13 @@ subroutine parameter(input_i3d)
   endif
   if (itype.eq.itype_tbl) then
      read(10, nml=Tripping); rewind(10)
+     skinfric_start = zero
+     skinfric_end = xlx
+     read(10, nml=SkinFrictionConvergence); rewind(10)
+     if (iskinfric == 1 .and. (skinfric_start < zero .or. skinfric_end > xlx .or. skinfric_start > skinfric_end)) then
+        if (nrank == 0) print *, "Problem with start/end locations for monitoring skin friction"
+        call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+     end if
   endif
   if (itype.eq.itype_abl) then
      read(10, nml=ABL); rewind(10)
@@ -257,6 +265,13 @@ subroutine parameter(input_i3d)
         npress = 1
      endif
   endif
+
+  ! Set locations and size arrays for monitoring skin friction
+  if (iskinfric == 1) then
+     skinfric_startidx = nint(skinfric_start / dx) + 1
+     skinfric_endidx = nint(skinfric_end / dx) + 1
+     allocate(skinfric(skinfric_endidx-skinfric_startidx+1), skinfricm1(skinfric_endidx-skinfric_startidx+1))
+  end if
 
   ! 2D snapshot is not compatible with coarse visualization
   if (output2D.ne.0) nvisu = 1
@@ -682,5 +697,9 @@ subroutine parameter_defaults()
   ys_tr_tbl=0.350508_mytype
   ts_tr_tbl=1.402033_mytype
   x0_tr_tbl=3.505082_mytype
+
+  ! Skin friction convergence parameters (other defaults set elsewhere)
+  iskinfric = 0
+  skinfric_tol = zero
 
 end subroutine parameter_defaults

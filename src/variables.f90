@@ -1344,6 +1344,12 @@ contains
     call alloc_z(divu3, opt_global=.true.) !global indices
     divu3=zero
 
+    ! Skin friction monitoring
+    skinfric_res = zero
+    if (iskinfric == 1) then 
+       skinfricm1 = zero
+    endif
+
     ! !TRIPPING
     zs_param=1.7_mytype
     randomseed=4600._mytype
