@@ -15,7 +15,7 @@ module tbl
   character(len=1),parameter :: NL=char(10) !new line character
 
   PRIVATE ! All functions/subroutines private by default
-  PUBLIC :: init_tbl, boundary_conditions_tbl, postprocess_tbl, visu_tbl, visu_tbl_init
+  PUBLIC :: init_tbl, boundary_conditions_tbl, postprocess_tbl, visu_tbl, visu_tbl_init, cuspline
 
 contains
 
@@ -135,6 +135,9 @@ contains
           byz1(i, k) = zero
         enddo
       enddo
+      if (iblow == 1) then 
+         call wall_blowing()
+      end if
     endif
     !! Top Boundary
     if (nclyn == 2) then
@@ -298,6 +301,144 @@ contains
 
     return
   end subroutine blasius
+
+   !############################################################################
+   subroutine wall_blowing()
+
+      implicit none
+
+      real(mytype) :: amp_time, amp_space, x
+      integer :: i, j, k
+
+      amp_time = exp_blend(t, blow_ramp / two, blow_ramp)
+
+      if (xstart(2) == 1) then
+         do i = 1, nx
+            x = dx * (i - 1)
+            if (x >= blow_x(1) .and. x <= blow_x(size(blow_x))) then
+               do j = 1, size(blow_x) - 1
+                  if (x >= blow_x(j) .and. x <= blow_x(j+1)) then
+                     k = j
+                     exit
+                  end if
+               end do
+               amp_space = cusplint(blow_x(k:k+1), blow_amp(k:k+1), blow_ampd2(k:k+1), x)
+               byy1(i,:) = amp_time * amp_space
+            end if
+         enddo
+      endif
+   end subroutine wall_blowing
+
+   ! Cubic spline (2nd derivative)
+   function cuspline(loc, val) result(d2val)
+
+      implicit none
+
+      real(mytype), dimension(:), intent(in) :: loc, val
+      real(mytype), dimension(size(loc)) :: d2val
+      real(mytype), dimension(size(loc)) :: rhs
+      real(mytype) :: dy1, dyn, a, b, c, d
+      integer i
+
+      d2val = 0.0_mytype
+      rhs = 0.0_mytype
+
+      ! Set 1st derivative BCs
+      dy1 = 0.0_mytype
+      dyn = 0.0_mytype
+
+      ! Thomas algorithm for tridiagonal systems (with BCs for spline)
+      d2val(1) = 0.5_mytype
+      rhs(1) = (3.0_mytype / (loc(2) - loc(1))) * ((val(2) - val(1)) / (loc(2) - loc(1)) - dy1);
+      do i = 2, size(loc) - 1
+          a = loc(i) - loc(i-1)
+          b = 2.0_mytype * (loc(i+1) - loc(i-1))
+          c = loc(i+1) - loc(i)
+          d = 6.0_mytype * ((val(i+1) - val(i)) / c - (val(i) - val(i-1)) / a)
+          d2val(i) = c / (b - a * d2val(i-1))
+          rhs(i) = (d - a * rhs(i-1)) / (b - a * d2val(i-1))
+      end do
+      a = loc(size(loc)) - loc(size(loc)-1);
+      b = 2.0_mytype * (loc(size(loc)) - loc(size(loc)-1));
+      d = 6.0_mytype * (dyn - (val(size(loc)) - val(size(loc)-1)) / (loc(size(loc)) - loc(size(loc)-1)));
+      rhs(size(loc)) = (d - a * rhs(size(loc)-1)) / (b - a * d2val(size(loc)-1));
+      d2val(size(loc)) = rhs(size(loc));
+      do i = size(loc) - 1, 1, -1
+          d2val(i) = rhs(i) - d2val(i) * d2val(i+1);
+      end do
+   end function cuspline
+
+   ! Cubic spline (interpolate)
+   function cusplint(loc, val, d2val, intloc) result(intval)
+
+      implicit none
+
+      real(mytype), dimension(2), intent(in) :: loc, val, d2val
+      real(mytype), intent(in) :: intloc
+      real(mytype) :: intval
+      real(mytype) :: A, B, C, D
+
+      A = (loc(2) - intloc) / (loc(2) - loc(1))
+      B = (intloc - loc(1)) / (loc(2) - loc(1))
+      C = (A**3 - A) * (loc(2) - loc(1))**2 / 6.0_mytype
+      D = (B**3 - B) * (loc(2) - loc(1))**2 / 6.0_mytype
+      intval = A * val(1) + B * val(2) + C * d2val(1) + D * d2val(2)
+   end function cusplint
+
+   !############################################################################
+   function quintic_blend(x, centre, width) result(y)
+
+      implicit none
+
+      real(mytype), intent(in) :: x, centre, width
+      real(mytype) :: xdash, y
+
+      xdash = (x - centre) / width
+      if (xdash < -half) then
+         y = zero
+      else if (xdash > half) then
+         y = one
+      else
+         y = 0.5_mytype + 1.875_mytype * xdash - 5.0_mytype * xdash**3 + 6.0_mytype * xdash**5
+      end if
+   end function
+
+   !############################################################################
+   function septic_blend(x, centre, width) result(y)
+
+      implicit none
+
+      real(mytype), intent(in) :: x, centre, width
+      real(mytype) :: xdash, y
+
+      xdash = (x - centre) / width
+      if (xdash < -half) then
+         y = zero
+      else if (xdash > half) then
+         y = one
+      else
+         y = 0.5_mytype + 2.1875_mytype * xdash - 8.75_mytype * xdash**3 + 21.0_mytype * xdash**5 - 20.0_mytype * xdash**7
+      end if
+   end function
+
+   !############################################################################
+   function exp_blend(x, centre, width) result(y)
+
+      implicit none
+
+      real(mytype), intent(in) :: x, centre, width
+      real(mytype) :: xdash, y
+      real(mytype), parameter :: TOL = 1.0e-6_mytype
+
+      xdash = (x - centre) / width
+      if (xdash <= -half + TOL) then
+         y = zero
+      else if (xdash >= half - TOL) then
+         y = one
+      else
+         y = one / (one + exp(one / (xdash - 0.5_mytype) + one / (xdash + 0.5_mytype)))
+      end if
+   end function
 
   !############################################################################
   subroutine postprocess_tbl(ux1,uy1,uz1,ep1)

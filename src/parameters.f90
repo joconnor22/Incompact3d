@@ -30,6 +30,7 @@ subroutine parameter(input_i3d)
   use probes, only : nprobes, setup_probes, flag_all_digits, flag_extra_probes, xyzprobes
   use visu, only : output2D
   use forces, only : iforces, nvol, xld, xrd, yld, yud!, zld, zrd
+  use tbl, only : cuspline
 
   implicit none
 
@@ -61,6 +62,7 @@ subroutine parameter(input_i3d)
   NAMELIST /WallModel/ smagwalldamp
   NAMELIST /Tripping/ itrip,A_tr,xs_tr_tbl,ys_tr_tbl,ts_tr_tbl,x0_tr_tbl
   NAMELIST /SkinFrictionConvergence/ iskinfric,skinfric_start,skinfric_end,skinfric_tol
+  NAMELIST /WallBlowing/ iblow,blow_ramp,blow_x,blow_amp
   NAMELIST /ibmstuff/ cex,cey,cez,ra,nobjmax,nraf,nvol,iforces, npif, izap, ianal, imove, thickness, chord, omega ,ubcx,ubcy,ubcz,rads, c_air
   NAMELIST /ForceCVs/ xld, xrd, yld, yud!, zld, zrd
   NAMELIST /LMN/ dens1, dens2, prandtl, ilmn_bound, ivarcoeff, ilmn_solve_temp, &
@@ -203,6 +205,16 @@ subroutine parameter(input_i3d)
      if (iskinfric == 1 .and. (skinfric_start < zero .or. skinfric_end > xlx .or. skinfric_start > skinfric_end)) then
         if (nrank == 0) print *, "Problem with start/end locations for monitoring skin friction"
         call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+     end if
+     read(10, nml=WallBlowing); rewind(10)
+     blow_x = blow_x(1:findloc(blow_x, huge(mytype), 1) - 1)
+     blow_amp = blow_amp(1:size(blow_x))
+     if (iblow == 1 .and. (size(blow_x) < 3 .or. blow_x(1) < zero .or. blow_x(size(blow_x)) > xlx)) then
+        if (nrank == 0) print *, "Problem with locations for blowing region"
+        call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+     end if
+     if (iblow == 1) then
+        blow_ampd2 = cuspline(blow_x, blow_amp)
      end if
   endif
   if (itype.eq.itype_abl) then
@@ -701,5 +713,12 @@ subroutine parameter_defaults()
   ! Skin friction convergence parameters (other defaults set elsewhere)
   iskinfric = 0
   skinfric_tol = zero
+
+  ! Wall blowing parameters
+  iblow = 0
+  blow_ramp = zero
+  allocate(blow_x(10), blow_amp(10))
+  blow_x = huge(mytype)
+  blow_amp = huge(mytype)
 
 end subroutine parameter_defaults
