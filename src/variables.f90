@@ -1213,6 +1213,34 @@ contains
     cdt=zero
     gdt=zero
 
+    ! Subdomain
+    idxouts = minloc(abs(xp - xouts), 1)
+    idxoute = minloc(abs(xp - xoute), 1)
+    idyouts = minloc(abs(yp - youts), 1)
+    idyoute = minloc(abs(yp - youte), 1)
+    idzouts = minloc(abs(zp - zouts), 1)
+    idzoute = minloc(abs(zp - zoute), 1)
+    
+    ! Do some checks on subdomain
+    if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+      if (istret.eq.0) then
+         if (nrank == 0) print *, "Subdomain output only works with stretched mesh"
+         call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+      end if
+      if (nvisu /= 1) then
+         if (nrank == 0) print *, "Subdomain output does not work with coarse output"
+         call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+      end if
+      if (output2D /= 0) then
+         if (nrank == 0) print *, "Subdomain output only works with 3D output"
+         call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+      end if
+#ifdef ADIOS2
+      if (nrank == 0) print *, "Subdomain output does not work ADIOS2"
+      call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+#endif
+    end if
+
     if (itimescheme.eq.1) then ! Euler
 
        iadvance_time=1

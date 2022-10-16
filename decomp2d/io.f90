@@ -1618,6 +1618,7 @@ contains
        deallocate(wk)
 
     end if
+    call MPI_COMM_FREE(newcomm,ierror)
 
     return
   end subroutine write_subdomain

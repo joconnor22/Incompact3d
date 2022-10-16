@@ -50,7 +50,7 @@ subroutine parameter(input_i3d)
   NAMELIST /NumOptions/ ifirstder, isecondder, itimescheme, iimplicit, &
        nu0nu, cnu, ipinter
   NAMELIST /InOutParam/ irestart, icheckpoint, ioutput, nvisu, ilist, iprocessing, &
-       ninflows, ntimesteps, inflowpath, ioutflow, output2D, nprobes
+       ninflows, ntimesteps, inflowpath, ioutflow, output2D, nprobes, xouts, xoute, youts, youte, zouts, zoute
   NAMELIST /Statistics/ wrotation,spinup_time, nstat, initstat, istatfreq
   NAMELIST /ProbesParam/ flag_all_digits, flag_extra_probes, xyzprobes
   NAMELIST /ScalarParam/ sc, ri, uset, cp, &
@@ -106,7 +106,12 @@ subroutine parameter(input_i3d)
      p_col = 1
   endif
   read(10, nml=NumOptions); rewind(10)
+  xouts = zero; xoute = xlx; youts = zero; youte = yly; zouts = zero; zoute = zlz
   read(10, nml=InOutParam); rewind(10)
+  if (xouts < zero .or. xoute > xlx .or. xouts >= xoute .or. youts < zero .or. youte > yly .or. youts >= youte .or. zouts < zero .or. zoute > zlz .or. zouts >= zoute) then
+     if (nrank == 0) print *, "Problem with start/end locations for writing out subdomain"
+     call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
+  end if
   read(10, nml=Statistics); rewind(10)
   if (iibm.ne.0) then
      read(10, nml=ibmstuff); rewind(10)
@@ -360,7 +365,7 @@ subroutine parameter(input_i3d)
      elseif (itype.eq.itype_uniform) then
         print *,'Uniform flow'
      elseif (itype.eq.itype_sandbox) then
-        print *,'Sandbox'
+           print *,'Sandbox'
      elseif (itype.eq.itype_cavity) then
         print *,'Cavity'  
      else

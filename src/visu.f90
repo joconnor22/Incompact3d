@@ -283,7 +283,7 @@ contains
     integer, intent(in) :: num
 
     character(len=:), allocatable :: filename
-    
+
     character(len=32) :: fmt2, fmt3, fmt4
     integer :: is
     integer :: ierr
@@ -352,7 +352,7 @@ contains
     real(mytype) :: xp(xszV(1)), zp(zszV(3))
 
     character(len=:), allocatable :: fmt
-    
+
     if (nrank.eq.0) then
       OPEN(newunit=ioxdmf,file="./data/"//gen_snapshotname(pathname, filename, num, "xdmf"))
 
@@ -370,24 +370,39 @@ contains
         enddo
         write(ioxdmf,*)'    <Geometry name="geo" Type="VXVYVZ">'
         if (output2D.ne.1) then
+          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+            write(ioxdmf,*)'        <DataItem Dimensions="',idxoute-idxouts+1,'" NumberType="Float" Precision="4" Format="XML">'
+            write(ioxdmf,*)'        ',xp(idxouts:idxoute)
+          else
           write(ioxdmf,*)'        <DataItem Dimensions="',xszV(1),'" NumberType="Float" Precision="4" Format="XML">'
           write(ioxdmf,*)'        ',xp(:)
+          end if
         else
           write(ioxdmf,*)'        <DataItem Dimensions="1" NumberType="Float" Precision="4" Format="XML">'
           write(ioxdmf,*)'        ',xp(1)
         endif
         write(ioxdmf,*)'        </DataItem>'
         if (output2D.ne.2) then
+          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+            write(ioxdmf,*)'        <DataItem Dimensions="',idyoute-idyouts+1,'" NumberType="Float" Precision="4" Format="XML">'
+            write(ioxdmf,*)'        ',yp(idyouts:idyoute)
+          else
           write(ioxdmf,*)'        <DataItem Dimensions="',yszV(2),'" NumberType="Float" Precision="4" Format="XML">'
           write(ioxdmf,*)'        ',yp(ystV(1)::nvisu)
+          end if
         else
           write(ioxdmf,*)'        <DataItem Dimensions="1" NumberType="Float" Precision="4" Format="XML">'
           write(ioxdmf,*)'        ',yp(1)
         endif
         write(ioxdmf,*)'        </DataItem>'
         if (output2D.ne.3) then
+          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+            write(ioxdmf,*)'        <DataItem Dimensions="',idzoute-idzouts+1,'" NumberType="Float" Precision="4" Format="XML">'
+            write(ioxdmf,*)'        ',zp(idzouts:idzoute)
+          else
           write(ioxdmf,*)'        <DataItem Dimensions="',zszV(3),'" NumberType="Float" Precision="4" Format="XML">'
           write(ioxdmf,*)'        ',zp(:)
+          end if
         else
           write(ioxdmf,*)'        <DataItem Dimensions="1" NumberType="Float" Precision="4" Format="XML">'
           write(ioxdmf,*)'        ',zp(1)
@@ -445,6 +460,29 @@ contains
 
     fmt = "(A, I0, A, I0, A, I0, A)"
     if (output2D.eq.0) then
+
+          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+            write(ioxdmf,*)'        Dimensions="',idzoute-idzouts+1,idyoute-idyouts+1,idxoute-idxouts+1,'">'
+          else
+            write(ioxdmf,*)'        Dimensions="',zszV(3),yszV(2),xszV(1),'">'
+          end if
+
+        write(ioxdmf,*)'    <Topology name="topo" TopologyType="3DRectMesh"'
+        if (output2D.eq.0) then
+          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+            write(ioxdmf,*)'        Dimensions="',idzoute-idzouts+1,idyoute-idyouts+1,idxoute-idxouts+1,'">'
+          else
+            write(ioxdmf,*)'        Dimensions="',zszV(3),yszV(2),xszV(1),'">'
+          end if
+        else if (output2D.eq.1) then
+          write(ioxdmf,*)'        Dimensions="',zszV(3),yszV(2),1,'">'
+        else if (output2D.eq.2) then
+          write(ioxdmf,*)'        Dimensions="',zszV(3),1,xszV(1),'">'
+        else if (output2D.eq.3) then
+          write(ioxdmf,*)'        Dimensions="',1,yszV(2),xszV(1),'">'
+        endif
+        write(ioxdmf,*)'    </Topology>'
+
        write(ioxdmf,fmt)'        Dimensions="',zszV(3)," ",yszV(2)," ",xszV(1),'">'
     else if (output2D.eq.1) then
        write(ioxdmf,fmt)'        Dimensions="',zszV(3)," ",yszV(2)," ",1,'">'
@@ -455,7 +493,7 @@ contains
     endif
     write(ioxdmf,'(A)')'    </Topology>'
   end subroutine write_xdmf_topo
-  
+
   !
   ! Write the footer of the XDMF file
   ! Adapted from https://github.com/fschuch/Xcompact3d/blob/master/src/visu.f90
@@ -506,7 +544,7 @@ contains
 
     integer :: precision
     character(len=:), allocatable :: fmt
-    
+
 #ifndef ADIOS2
     mpiio = .true.
 #else
@@ -545,7 +583,11 @@ contains
 
           fmt = "(A, I0, A, I0, A, I0, A)"
           if (output2D.eq.0) then
-             write(ioxdmf,fmt)'            Dimensions="',zszV(3)," ",yszV(2)," ",xszV(1),'">'
+            if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+              write(ioxdmf,fmt)'            Dimensions="',idzoute-idzouts+1,idyoute-idyouts+1,idxoute-idxouts+1,'">'
+            else
+              write(ioxdmf,fmt)'            Dimensions="',zszV(3),yszV(2),xszV(1),'">'
+            end if
           else if (output2D.eq.1) then
              write(ioxdmf,fmt)'            Dimensions="',zszV(3)," ",yszV(2)," ",1,'">'
           else if (output2D.eq.2) then
@@ -568,12 +610,16 @@ contains
     endif
     if (output2D.eq.0) then
        if (mpiio .or. (iibm == 2) .or. force_flush) then
+          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+            call decomp_2d_write_subdomain(1, local_array, idxouts, idxoute, idyouts, idyoute, idzouts, idzoute, gen_filename(pathname // "/data", filename, num, 'bin'))
+          else
           !! XXX: This (re)uses a temporary array for data - need to force synchronous writes.
           uvisu = zero
           
           call fine_to_coarseV(1,local_array,uvisu)
           call decomp_2d_write_one(1,uvisu,"data",gen_filename(pathname, filename, num, 'bin'),2,io_name,&
                opt_deferred_writes=.false.)
+          end if
        else
           call decomp_2d_write_one(1,f1,"data",gen_filename(pathname, filename, num, 'bin'),0,io_name)
        end if

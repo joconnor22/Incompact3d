@@ -387,6 +387,10 @@ module param
   integer :: save_dvdx,save_dvdy,save_dvdz,save_dwdx,save_dwdy,save_dwdz
   integer :: save_dphidx,save_dphidy,save_dphidz,save_abs,save_V
 
+  !Subdomain
+  real(mytype) :: xouts,xoute,youts,youte,zouts,zoute
+  integer :: idxouts,idxoute,idyouts,idyoute,idzouts,idzoute
+
   !module tripping
   integer ::  z_modes, nxt_itr, itrip
   real(mytype) :: x0_tr, xs_tr, ys_tr, ts_tr, zs_param, zs_tr, randomseed, A_trip
