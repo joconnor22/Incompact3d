@@ -1,0 +1,129 @@
+! -*- mode: f90 -*-
+!===================
+&BasicParam
+!===================
+! Flow type (1=Lock-exchange, 2=TGV, 3=Channel, 4=Periodic hill, 5=Cylinder, 6=dbg-schemes, 9=Turbulent-Boundary-Layer)
+itype = 9
+
+! Domain decomposition
+p_row = 0               ! Row partition
+p_col = 0               ! Column partition
+
+! Mesh
+nx = 1537               ! X-direction nodes
+ny = 257                ! Y-direction nodes
+nz = 128                ! Z-direction nodes
+istret = 3              ! y mesh refinement (0:no, 1:center, 2:both sides, 3:bottom)
+beta = 0.7              ! Refinement parameter (beta)
+
+! Domain
+xlx = 750.0             ! Lx (Size of the box in x-direction)
+yly = 80.0              ! Ly (Size of the box in y-direction)
+zlz = 30.0              ! Lz (Size of the box in z-direction)
+
+! Boundary conditions
+nclx1 = 2
+nclxn = 2
+ncly1 = 2
+nclyn = 2
+nclz1 = 0
+nclzn = 0
+
+! Flow parameters
+iin = 1                 ! Inflow conditions (1: classic, 2: turbinit)
+re  = 1250.0            ! nu=1/re (Kinematic Viscosity)
+u1  = 1.0               ! u1 (max velocity) (for inflow condition)
+u2  = 1.0               ! u2 (min velocity) (for inflow condition)
+
+! Time stepping
+dt = 0.0064             ! Time step
+ifirst = 1              ! First iteration
+ilast = 1875000         ! Last iteration
+
+! Enable modelling tools
+ilesmod = 1             ! if 0 then DNS
+
+/End
+
+!====================
+&NumOptions
+!====================
+! Spatial derivatives
+ifirstder = 4           ! (1->2nd central, 2->4th central, 3->4th compact, 4-> 6th compact)
+isecondder = 5          ! (1->2nd central, 2->4th central, 3->4th compact, 4-> 6th compact, 5->hyperviscous 6th)
+ipinter = 2             ! interpolation scheme (1: classic, 2: optimized, 3: optimized agressive)
+
+! Time scheme
+iimplicit = 2           ! Implicit scheme for y-diffusive term
+itimescheme = 3         ! Time integration scheme
+
+! Dissipation control
+nu0nu = 20.0            ! Ratio between hyperviscosity/viscosity at nu
+cnu = 0.351             ! Ratio between hypervisvosity at k_m=2/3pi and k_c= pi
+
+/End
+
+!=================
+&InOutParam
+!=================
+! Basic I/O
+irestart = 0            ! Read initial flow field ?
+icheckpoint = 187500    ! Frequency for writing backup file
+ioutput = 1875001       ! Frequency for visualization
+ilist = 50              ! Frequency for writing to screen
+nvisu = 1               ! Size for visualisation collection
+
+/End
+
+!=================
+&Statistics
+!=================
+nstat = 1               ! Size arrays for statistic collection
+initstat = 234375       ! Time steps after which statistics are collected
+
+/End
+
+!########################
+! OPTIONAL PARAMETERS
+!#######################
+!================
+&LESModel
+!================
+jles = 4                ! LES Model (1: Phys Smag, 2: Phys WALE, 3: Phys dyn. Smag, 4: iSVV, 5: dyn SEV)
+
+/End
+
+!================
+&Tripping
+!================
+itrip = 1               ! 1 to activate the tripping for TBL, 0 otherwise for LBL 
+A_tr = 0.8              ! to be use with care, value is mesh-dependent
+xs_tr_tbl = 1.402033
+ys_tr_tbl = 0.350508
+ts_tr_tbl = 1.402033
+x0_tr_tbl = 3.505082
+
+/End
+
+!================
+&SkinFrictionConvergence
+!================
+iskinfric = 1           ! Skin friction monitoring (0: Off, 1: On)
+skinfric_start = 35.0   ! X-location to start tracking skin friction (default = 0.0)
+skinfric_end = 650.0    ! X-location to end tracking skin friction (default = xlx)
+skinfric_tol = 0.02     ! Tolerance for skin friction residual to exit early (set to 0 for no exit)
+
+/End
+
+!================
+&WallBlowing
+!================
+iblow = 1               ! Wall blowing (0: Off, 1: On)
+blow_ramp = 100.0       ! Time over which to ramp up the blowing velocity
+blow_x = 68.0, 87.25, 106.5, 125.75, 145.0
+blow_amp = 0.0, 0.0075, 0.0025, 0.0075, 0.0
+
+/End
+
+&CASE
+/End
