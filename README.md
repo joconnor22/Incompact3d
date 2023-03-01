@@ -1,4 +1,7 @@
 
+This fork provides an implementation for a uniform profile of wall-normal blowing in a turbulent boundary layer. An example input file is provided at `examples/TBL-Wall-Normal-Blowing/input.i3d`.
+___
+
 [![DOI](https://zenodo.org/badge/127266756.svg)](https://zenodo.org/badge/latestdoi/127266756)
 
 ## The Xcompact3d code
