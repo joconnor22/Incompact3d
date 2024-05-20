@@ -410,7 +410,7 @@ contains
 
     logical, intent(out) :: visu_initialised
 
-    call decomp_2d_register_variable(io_name, "vort", 1, 0, output2D, mytype)
+    !  call decomp_2d_register_variable(io_name, "vort", 1, 0, output2D, mytype)
 
     visu_initialised = .true.
 
@@ -483,7 +483,7 @@ contains
     di1(:,:,:)=sqrt(  (tf1(:,:,:)-th1(:,:,:))**2 &
                     + (tg1(:,:,:)-tc1(:,:,:))**2 &
                     + (tb1(:,:,:)-td1(:,:,:))**2)
-    call write_field(di1, ".", "vort", num, flush=.true.) ! Reusing temporary array, force flush
+    !  call write_field(di1, ".", "vort", num, flush=.true.) ! Reusing temporary array, force flush
 
   end subroutine visu_tbl
 
