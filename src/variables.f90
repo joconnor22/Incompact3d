@@ -83,9 +83,11 @@ contains
 
   subroutine init_variables
 
+    use MPI
+
     TYPE(DECOMP_INFO), save :: ph! decomposition object
 
-    integer :: i, j, k
+    integer :: i, j, k, ierr
     
 #ifdef DEBG
     if (nrank == 0) write(*,*) '# Init_variables start'
@@ -1229,10 +1231,6 @@ contains
       end if
       if (nvisu /= 1) then
          if (nrank == 0) print *, "Subdomain output does not work with coarse output"
-         call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
-      end if
-      if (output2D /= 0) then
-         if (nrank == 0) print *, "Subdomain output only works with 3D output"
          call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
       end if
 #ifdef ADIOS2

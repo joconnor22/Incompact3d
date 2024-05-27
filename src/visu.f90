@@ -337,8 +337,8 @@ contains
   !
   subroutine write_xdmf_header(pathname, filename, num)
 
-    use variables, only : nvisu, yp
-    use param, only : dx,dy,dz,istret
+    use variables, only : nvisu, yp, nx, ny, nz
+    use param, only : dx,dy,dz,istret, idxouts, idxoute, idyouts, idyoute, idzouts, idzoute
     use decomp_2d, only : mytype, nrank, xszV, yszV, zszV, ystV
 
     implicit none
@@ -374,8 +374,8 @@ contains
             write(ioxdmf,*)'        <DataItem Dimensions="',idxoute-idxouts+1,'" NumberType="Float" Precision="4" Format="XML">'
             write(ioxdmf,*)'        ',xp(idxouts:idxoute)
           else
-          write(ioxdmf,*)'        <DataItem Dimensions="',xszV(1),'" NumberType="Float" Precision="4" Format="XML">'
-          write(ioxdmf,*)'        ',xp(:)
+            write(ioxdmf,*)'        <DataItem Dimensions="',xszV(1),'" NumberType="Float" Precision="4" Format="XML">'
+            write(ioxdmf,*)'        ',xp(:)
           end if
         else
           write(ioxdmf,*)'        <DataItem Dimensions="1" NumberType="Float" Precision="4" Format="XML">'
@@ -387,8 +387,8 @@ contains
             write(ioxdmf,*)'        <DataItem Dimensions="',idyoute-idyouts+1,'" NumberType="Float" Precision="4" Format="XML">'
             write(ioxdmf,*)'        ',yp(idyouts:idyoute)
           else
-          write(ioxdmf,*)'        <DataItem Dimensions="',yszV(2),'" NumberType="Float" Precision="4" Format="XML">'
-          write(ioxdmf,*)'        ',yp(ystV(1)::nvisu)
+            write(ioxdmf,*)'        <DataItem Dimensions="',yszV(2),'" NumberType="Float" Precision="4" Format="XML">'
+            write(ioxdmf,*)'        ',yp(ystV(1)::nvisu)
           end if
         else
           write(ioxdmf,*)'        <DataItem Dimensions="1" NumberType="Float" Precision="4" Format="XML">'
@@ -400,8 +400,8 @@ contains
             write(ioxdmf,*)'        <DataItem Dimensions="',idzoute-idzouts+1,'" NumberType="Float" Precision="4" Format="XML">'
             write(ioxdmf,*)'        ',zp(idzouts:idzoute)
           else
-          write(ioxdmf,*)'        <DataItem Dimensions="',zszV(3),'" NumberType="Float" Precision="4" Format="XML">'
-          write(ioxdmf,*)'        ',zp(:)
+            write(ioxdmf,*)'        <DataItem Dimensions="',zszV(3),'" NumberType="Float" Precision="4" Format="XML">'
+            write(ioxdmf,*)'        ',zp(:)
           end if
         else
           write(ioxdmf,*)'        <DataItem Dimensions="1" NumberType="Float" Precision="4" Format="XML">'
@@ -443,7 +443,8 @@ contains
   subroutine write_xdmf_topo()
 
     use decomp_2d, only : xszV, yszV, zszV
-    use param, only : istret
+    use variables, only : nx, ny, nz
+    use param, only : istret, idxouts, idxoute, idyouts, idyoute, idzouts, idzoute
     
     implicit none
 
@@ -460,30 +461,11 @@ contains
 
     fmt = "(A, I0, A, I0, A, I0, A)"
     if (output2D.eq.0) then
-
-          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
-            write(ioxdmf,*)'        Dimensions="',idzoute-idzouts+1,idyoute-idyouts+1,idxoute-idxouts+1,'">'
-          else
-            write(ioxdmf,*)'        Dimensions="',zszV(3),yszV(2),xszV(1),'">'
-          end if
-
-        write(ioxdmf,*)'    <Topology name="topo" TopologyType="3DRectMesh"'
-        if (output2D.eq.0) then
-          if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
-            write(ioxdmf,*)'        Dimensions="',idzoute-idzouts+1,idyoute-idyouts+1,idxoute-idxouts+1,'">'
-          else
-            write(ioxdmf,*)'        Dimensions="',zszV(3),yszV(2),xszV(1),'">'
-          end if
-        else if (output2D.eq.1) then
-          write(ioxdmf,*)'        Dimensions="',zszV(3),yszV(2),1,'">'
-        else if (output2D.eq.2) then
-          write(ioxdmf,*)'        Dimensions="',zszV(3),1,xszV(1),'">'
-        else if (output2D.eq.3) then
-          write(ioxdmf,*)'        Dimensions="',1,yszV(2),xszV(1),'">'
-        endif
-        write(ioxdmf,*)'    </Topology>'
-
-       write(ioxdmf,fmt)'        Dimensions="',zszV(3)," ",yszV(2)," ",xszV(1),'">'
+      if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
+        write(ioxdmf,fmt)'        Dimensions="',idzoute-idzouts+1," ",idyoute-idyouts+1," ",idxoute-idxouts+1,'">'
+      else
+        write(ioxdmf,fmt)'        Dimensions="',zszV(3)," ",yszV(2)," ",xszV(1),'">'
+      endif
     else if (output2D.eq.1) then
        write(ioxdmf,fmt)'        Dimensions="',zszV(3)," ",yszV(2)," ",1,'">'
     else if (output2D.eq.2) then
@@ -525,10 +507,11 @@ contains
     use var, only : ep1
     use var, only : zero, one
     use var, only : uvisu
-    use param, only : iibm
+    use variables, only : nx, ny, nz
+    use param, only : iibm, idxouts, idxoute, idyouts, idyoute, idzouts, idzoute
     use decomp_2d, only : mytype, xsize, xszV, yszV, zszV
     use decomp_2d, only : nrank, fine_to_coarseV
-    use decomp_2d_io, only : decomp_2d_write_one, decomp_2d_write_plane
+    use decomp_2d_io, only : decomp_2d_write_one, decomp_2d_write_plane, decomp_2d_write_subdomain
 
     implicit none
 
@@ -584,9 +567,9 @@ contains
           fmt = "(A, I0, A, I0, A, I0, A)"
           if (output2D.eq.0) then
             if (idxouts /= 1 .or. idxoute /= nx .or. idyouts /= 1 .or. idyoute /= ny .or. idzouts /= 1 .or. idzoute /= nz) then
-              write(ioxdmf,fmt)'            Dimensions="',idzoute-idzouts+1,idyoute-idyouts+1,idxoute-idxouts+1,'">'
+              write(ioxdmf,fmt)'            Dimensions="',idzoute-idzouts+1," ",idyoute-idyouts+1," ",idxoute-idxouts+1,'">'
             else
-              write(ioxdmf,fmt)'            Dimensions="',zszV(3),yszV(2),xszV(1),'">'
+              write(ioxdmf,fmt)'            Dimensions="',zszV(3)," ",yszV(2)," ",xszV(1),'">'
             end if
           else if (output2D.eq.1) then
              write(ioxdmf,fmt)'            Dimensions="',zszV(3)," ",yszV(2)," ",1,'">'
